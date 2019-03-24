@@ -5,8 +5,9 @@ import os
 
 ROOT = os.path.dirname(__file__)
 
-SPREADSHEET_ID="1t5IoiIjPAS2CD63P6xI4hWwx9c1SEzW9AL1LJ4LK6og"
-ALL_CARDS="All Cards"
+SPREADSHEET_ID = "1t5IoiIjPAS2CD63P6xI4hWwx9c1SEzW9AL1LJ4LK6og"
+ALL_CARDS = "All Cards"
+TRAINING_CARDS = "Training Cards"
 MIXED_TEAMS = {
     "aog": "Alliance of Goodness",
     "au": "Afterlife United",
@@ -34,7 +35,7 @@ def get_all_cards():
 def generate_player_pack(team,quality="budget"):
     pack = []
     cards = client.open_by_key(SPREADSHEET_ID).worksheet(f"{MIXED_TEAMS[team]} Cards").get_all_records()
-    # first is always premium
+
     pack.append(pick(cards,"premium"))
     pack.append(pick(cards,quality))
     pack.append(pick(cards,quality))
@@ -43,9 +44,8 @@ def generate_player_pack(team,quality="budget"):
 
 def generate_training_pack(quality="budget"):
     pack = []
-    cards = client.open_by_key(SPREADSHEET_ID).worksheet("Training Cards").get_all_records()
-    #premium = list(filter(lambda p: p["Weighted Value (Premium)"], players))
-    # first is always premium
+    cards = client.open_by_key(SPREADSHEET_ID).worksheet(TRAINING_CARDS).get_all_records()
+
     pack.append(pick(cards,"premium"))
     pack.append(pick(cards,quality))
     pack.append(pick(cards,quality))
@@ -54,7 +54,7 @@ def generate_training_pack(quality="budget"):
 
 def generate_booster_pack(quality="budget"):
     pack = []
-    cards = client.open_by_key(SPREADSHEET_ID).worksheet("All Cards").get_all_records()
+    cards = client.open_by_key(SPREADSHEET_ID).worksheet(ALL_CARDS).get_all_records()
     
     pack.append(pick(cards,"premium"))
     pack.append(pick(cards,quality))
@@ -66,16 +66,21 @@ def generate_booster_pack(quality="budget"):
     return pack
 
 def pick(cards,quality="budget"):
+    
     quality = quality.capitalize()
     max_weight = int(cards[-1][f"Weighted Value ({quality})"])
     pick_weight = random.randint(0,max_weight)
+
     for i,card in enumerate(cards):
+        # ignore cards with empty weighted value
         if card[f"Weighted Value ({quality})"]=="":
             continue
-        print(card[f"Weighted Value ({quality})"])
+
+        # if the pick and current values are equal it is the card
         current_weight = int(card[f"Weighted Value ({quality})"])
         if current_weight == pick_weight:
             return card
+        # else if the current os already higher we select the current or the previous, whichever is closer
         elif current_weight > pick_weight:
             # pick the one that is closer
             if (current_weight - pick_weight) > (pick_weight - int(cards[i-1][f"Weighted Value ({quality})"])):
@@ -86,5 +91,5 @@ def pick(cards,quality="budget"):
 
 
 
-if __name__ == "__main__":
-    print(generate_player_pack("VT","budget"))
+#if __name__ == "__main__":
+#    print(generate_player_pack("VT","budget"))
