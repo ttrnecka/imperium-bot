@@ -56,7 +56,7 @@ def format_pack(pack):
     msg = ""
     for card in pack:
         msg+=rarity_emoji(card["Rarity"])
-        msg+=f'**{card["Card Name"]}**: {card["Rarity"]} {card["Race"]} {card["Type"]}\n'
+        msg+=f'**{card["Card Name"]}** ({card["Rarity"]} {card["Race"]} {card["Type"]} Card)\n'
         msg+="-" * 65 + "\n"
     return msg
 
