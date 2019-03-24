@@ -1,6 +1,9 @@
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import random
+import os
+
+ROOT = os.path.dirname(__file__)
 
 SPREADSHEET_ID="1t5IoiIjPAS2CD63P6xI4hWwx9c1SEzW9AL1LJ4LK6og"
 ALL_CARDS="All Cards"
@@ -20,7 +23,7 @@ MIXED_TEAMS = {
 
 # use creds to create a client to interact with the Google Drive API
 scope = ['https://spreadsheets.google.com/feeds']
-creds = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name(os.path.join(ROOT, 'client_secret.json'), scope)
 client = gspread.authorize(creds)
 
 
