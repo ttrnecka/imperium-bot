@@ -16,7 +16,7 @@ logger.addHandler(handler)
 
 with open(os.path.join(ROOT, 'TOKEN'), 'r') as token_file:
     TOKEN=token_file.read()
-    
+
 client = discord.Client()
 
 GEN_QUALITY = ["premium","budget"]
@@ -55,6 +55,7 @@ async def on_ready():
 def format_pack(pack):
     msg = ""
     for card in pack:
+        msg+=rarity_emoji(card["Rarity"])
         msg+=f'**{card["Card Name"]}**: {card["Rarity"]} {card["Race"]} {card["Type"]}\n'
         msg+="-" * 65 + "\n"
     return msg
@@ -83,5 +84,14 @@ def check_command(command):
     if length==4 and args[3] not in imperiumsheet.MIXED_TEAMS.keys():
         return False
     return True
+
+def rarity_emoji(rarity):
+    switcher = {
+        "Common": "",
+        "Rare": ":diamonds:",
+        "Epic": ":large_blue_diamond:",
+        "Legendary": ":large_orange_diamond: ",
+    }
+    return switcher.get(rarity, "")
 
 client.run(TOKEN)
