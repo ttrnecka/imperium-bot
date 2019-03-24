@@ -5,8 +5,11 @@ import discord
 import imperiumsheet
 import random
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('discord')
+logger.setLevel(logging.INFO)
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logger.addHandler(handler)
 
 TOKEN = 'NTU4OTcxMTkwOTYyNjgzOTA0.D3emLQ.A6G8xqEd-W8s_gNojPZy2iRjR54'
 client = discord.Client()
