@@ -45,35 +45,40 @@ async def on_message(message):
                 await client.send_message(message.channel, "Username missing")
                 return
             coaches = Coach.find_by_name(args[1])
-
-            msg=f"{message.author.mention}\n"
+            msg = LongMessage(client,message.channel)
+            #msg.add(f"{message.author.mention}\n")
             if len(coaches)==0:
-                msg+="No coaches found"
+                msg.add("No coaches found")
             for coach in coaches:
-                msg+=f"**{coach.name} collection:**\n"
-                msg+=f"{format_pack(coach.collection)}"
-            await client.send_message(message.channel, msg)
+                msg.add(f"**{coach.name} collection:**\n")
+                msg.add("-" * 65 + "\n")
+                msg.add(f"{format_pack(coach.collection)}")
+                msg.add("-" * 65 + "\n\n")
+            
+            await msg.send()
 
+    # list commands
     if message.content.startswith('!list'):
         coach = Coach.load_coach(str(message.author))
         order = False if "bydate" in message.content else True
 
-        msg=f"{message.author.mention}\n**Collection**:\n"
-        msg+=""
-        msg+=f"{format_pack(coach.collection,order)}"
-        await client.send_message(message.author, msg)
+        msg = LongMessage(client,message.author)
+        msg.add("**Collection**:\n\n")
+        msg.add(f"{format_pack(coach.collection,order)}")
+        await msg.send()
         await client.send_message(message.channel, "Collection sent to PM")
 
+    # genpack commands
     if message.content.startswith('!genpack'):
         if check_gen_command(cmd):
-            quality = args[1]
-            ptype = args[2]
+            ptype = args[1]
             if ptype=="player":
-                team = args[3]
-                pack = imperiumsheet.generate_player_pack(team,quality)
+                team = args[2]
+                pack = imperiumsheet.generate_player_pack(team,"premium")
             elif ptype=="training":
-                pack = imperiumsheet.generate_training_pack(quality)
+                pack = imperiumsheet.generate_training_pack("premium")
             elif ptype=="booster":
+                quality = "budget" if len(args)<3 else args[2]
                 pack = imperiumsheet.generate_booster_pack(quality)
 
             # add error handling eventually
@@ -81,8 +86,9 @@ async def on_message(message):
             coach.add_to_collection(pack)
             coach.store_coach()
 
-            msg=f"{message.author.mention}\n{format_pack(pack)}"
-            await client.send_message(message.channel, msg)
+            msg = LongMessage(client,message.channel)
+            msg.add(f"Pack for **{message.author}**:\n{format_pack(pack)}")
+            await msg.send()
 
             # export
             imperiumsheet.store_all_cards()
@@ -107,12 +113,12 @@ def format_pack(pack,is_sorted=True):
 def gen_help():
     msg="```"
     msg+="USAGE:\n"
-    msg+="!genpack <quality> <type> [mixed_team]\n"
-    msg+="\t<quality> - budget, premium\n"
+    msg+="!genpack <type> [mixed_team] [quality]\n"
     msg+="\t<type> - player, training, booster\n"
-    msg+="\t[mixed_team]: use with player <type> only\n"
+    msg+="\t[mixed_team]: (player only)\n"
     for key, name in imperiumsheet.MIXED_TEAMS.items():
         msg+=f"\t\t{key} - {name}\n"
+    msg+="\t[quality] - budget, premium (booster only)\n"
     msg+="```"
     return msg
 
@@ -124,13 +130,19 @@ def is_private_admin_channel(dchannel):
 def check_gen_command(command):
     args = command.split()
     length = len(args)
-    if length not in [3,4]:
+    if length not in [2,3]:
         return False
-    if args[1] not in GEN_QUALITY:
+        
+    if args[1] not in GEN_PACKS:
         return False
-    if args[2] not in GEN_PACKS:
+    # training/booster without quality
+    if length == 2 and args[1] not in ["training","booster"]:
         return False
-    if length==4 and args[3] not in imperiumsheet.MIXED_TEAMS.keys():
+    # booster with allowed quality
+    if length == 3 and args[1]=="booster" and args[2] not in GEN_QUALITY:
+        return False
+    # player with teams 
+    if length == 3 and args[1]=="player" and args[2] not in imperiumsheet.MIXED_TEAMS.keys():
         return False
     return True
 
@@ -142,5 +154,27 @@ def rarity_emoji(rarity):
         "Legendary": ":large_orange_diamond: ",
     }
     return switcher.get(rarity, "")
-    
+
+class LongMessage:
+    def __init__(self,client,channel):
+        self.limit = 2000
+        self.parts = []
+        self.client = client
+        self.channel=channel
+
+    def add(self,part):
+        self.parts.append(part)
+
+    async def send(self):
+        for chunk in self.chunks():
+            await self.client.send_message(self.channel, chunk)
+
+    def chunks(self):
+        while True:
+            msg=""
+            if not self.parts:
+                break
+            while len(self.parts)>0 and len(msg + self.parts[0]) < self.limit:
+                msg += self.parts.pop(0)
+            yield msg
 client.run(TOKEN)
