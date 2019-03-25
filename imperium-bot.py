@@ -5,11 +5,12 @@ import discord
 import imperiumsheet
 import random
 import os
+from coach import Coach
 
 ROOT = os.path.dirname(__file__)
 
 logger = logging.getLogger('discord')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(filename=os.path.join(ROOT, 'discord.log'), encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
@@ -25,10 +26,17 @@ GEN_PACKS = ["player","training","booster"]
 @client.event
 async def on_message(message):
     # we do not want the bot to reply to itself
+    logger.info(f"{message.author}: {message.content}")
     if message.author == client.user:
         return
+    if message.content.startswith('!list'):
+        coach = Coach.load_coach(message.author)
+        msg=f"{message.author.mention}\n**Collection**:\n"
+        msg+=""
+        msg+=f"{format_pack(coach.collection)}"
+        await client.send_message(message.channel, msg)
+
     if message.content.startswith('!genpack'):
-        logger.info(f"{message.author}: {message.content}")
         cmd = message.content.lower()
         if check_command(cmd):
             args = cmd.split()
@@ -41,6 +49,12 @@ async def on_message(message):
                 pack = imperiumsheet.generate_training_pack(quality)
             elif ptype=="booster":
                 pack = imperiumsheet.generate_booster_pack(quality)
+
+            # add error handling eventually
+            coach = Coach.load_coach(str(message.author))
+            coach.add_to_collection(pack)
+            coach.store_coach()
+
             msg=f"{message.author.mention}\n{format_pack(pack)}"
             await client.send_message(message.channel, msg)
         else:
@@ -54,6 +68,7 @@ async def on_ready():
 
 def format_pack(pack):
     msg = ""
+    msg+="-" * 65 + "\n"
     for card in pack:
         msg+=rarity_emoji(card["Rarity"])
         msg+=f'**{card["Card Name"]}** ({card["Rarity"]} {card["Race"]} {card["Type"]} Card)\n'
@@ -69,7 +84,7 @@ def gen_help():
     msg+="\t[mixed_team]: use with player <type> only\n"
     for key, name in imperiumsheet.MIXED_TEAMS.items():
         msg+=f"\t\t{key} - {name}\n"
-    msg+="```"    
+    msg+="```"
     return msg
 
 def check_command(command):

@@ -39,7 +39,7 @@ def generate_player_pack(team,quality="budget"):
     pack.append(pick(cards,"premium"))
     pack.append(pick(cards,quality))
     pack.append(pick(cards,quality))
-    
+
     return pack
 
 def generate_training_pack(quality="budget"):
@@ -49,24 +49,24 @@ def generate_training_pack(quality="budget"):
     pack.append(pick(cards,"premium"))
     pack.append(pick(cards,quality))
     pack.append(pick(cards,quality))
-    
+
     return pack
 
 def generate_booster_pack(quality="budget"):
     pack = []
     cards = client.open_by_key(SPREADSHEET_ID).worksheet(ALL_CARDS).get_all_records()
-    
+
     pack.append(pick(cards,"premium"))
     pack.append(pick(cards,quality))
     pack.append(pick(cards,quality))
-    
+
     pack.append(pick(cards,quality))
     pack.append(pick(cards,quality))
-    
+
     return pack
 
 def pick(cards,quality="budget"):
-    
+
     quality = quality.capitalize()
     max_weight = int(cards[-1][f"Weighted Value ({quality})"])
     pick_weight = random.randint(0,max_weight)
@@ -87,9 +87,7 @@ def pick(cards,quality="budget"):
                 return cards[i-1]
             else:
                 return card
-                    
-
 
 
 #if __name__ == "__main__":
-#    print(generate_player_pack("VT","budget"))
+    #print(Coach.load_coach("TomasTddwd").collection)
