@@ -33,9 +33,9 @@ async def on_message(message):
         return
     # admin commands
     if message.content.startswith('!admin'):
-        #if not is_private_admin_channel(message.channel):
-        #    await client.send_message(message.channel, "Insuficient rights")
-        #    return
+        if not is_private_admin_channel(message.channel):
+            await client.send_message(message.channel, "Insuficient rights")
+            return
         if message.content.startswith('!adminlist'):
             args = cmd.split()
             if len(args)==1:
@@ -113,7 +113,7 @@ def gen_help():
     return msg
 
 def is_private_admin_channel(dchannel):
-    if dchannel.is_private and "admin" in dchannel.name:
+    if "admin-channel" in dchannel.name:
         return True
     return False
 
