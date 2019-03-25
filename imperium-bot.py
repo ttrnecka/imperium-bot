@@ -9,6 +9,7 @@ from coach import Coach
 
 ROOT = os.path.dirname(__file__)
 
+#logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(filename=os.path.join(ROOT, 'discord.log'), encoding='utf-8', mode='w')
@@ -22,12 +23,15 @@ client = discord.Client()
 
 GEN_QUALITY = ["premium","budget"]
 GEN_PACKS = ["player","training","booster"]
+rarityorder={"Common":100, "Rare":10, "Epic":5, "Legendary":1}
+
 
 @client.event
 async def on_message(message):
     # we do not want the bot to reply to itself
     logger.info(f"{message.author}: {message.content}")
     cmd = message.content.lower()
+    args = cmd.split()
 
     if message.author == client.user:
         return
@@ -37,7 +41,6 @@ async def on_message(message):
             await client.send_message(message.channel, "Insuficient rights")
             return
         if message.content.startswith('!adminlist'):
-            args = cmd.split()
             if len(args)==1:
                 await client.send_message(message.channel, "Username missing")
                 return
@@ -53,15 +56,16 @@ async def on_message(message):
 
     if message.content.startswith('!list'):
         coach = Coach.load_coach(str(message.author))
+        order = False if "bydate" in message.content else True
+
         msg=f"{message.author.mention}\n**Collection**:\n"
         msg+=""
-        msg+=f"{format_pack(coach.collection)}"
+        msg+=f"{format_pack(coach.collection,order)}"
         await client.send_message(message.author, msg)
         await client.send_message(message.channel, "Collection sent to PM")
 
     if message.content.startswith('!genpack'):
         if check_gen_command(cmd):
-            args = cmd.split()
             quality = args[1]
             ptype = args[2]
             if ptype=="player":
@@ -91,13 +95,13 @@ async def on_ready():
     logger.info(client.user.id)
     logger.info('------')
 
-def format_pack(pack):
+def format_pack(pack,is_sorted=True):
+    if is_sorted:
+        pack = sorted(pack, key=lambda x: (rarityorder[x["Rarity"]],x["Card Name"]))
     msg = ""
-    #msg+="-" * 65 + "\n"
     for card in pack:
         msg+=rarity_emoji(card["Rarity"])
         msg+=f'**{card["Card Name"]}** ({card["Rarity"]} {card["Race"]} {card["Type"]} Card)\n'
-        #msg+="-" * 65 + "\n"
     return msg
 
 def gen_help():
@@ -138,5 +142,5 @@ def rarity_emoji(rarity):
         "Legendary": ":large_orange_diamond: ",
     }
     return switcher.get(rarity, "")
-
+    
 client.run(TOKEN)

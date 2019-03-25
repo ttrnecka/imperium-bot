@@ -1,0 +1,7 @@
+pack generator error handling - if error revert
+pack cost
+
+info card command
+
+DONE
+pack list sorting
