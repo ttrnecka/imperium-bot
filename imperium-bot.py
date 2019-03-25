@@ -27,18 +27,40 @@ GEN_PACKS = ["player","training","booster"]
 async def on_message(message):
     # we do not want the bot to reply to itself
     logger.info(f"{message.author}: {message.content}")
+    cmd = message.content.lower()
+
     if message.author == client.user:
         return
+    # admin commands
+    if message.content.startswith('!admin'):
+        #if not is_private_admin_channel(message.channel):
+        #    await client.send_message(message.channel, "Insuficient rights")
+        #    return
+        if message.content.startswith('!adminlist'):
+            args = cmd.split()
+            if len(args)==1:
+                await client.send_message(message.channel, "Username missing")
+                return
+            coaches = Coach.find_by_name(args[1])
+
+            msg=f"{message.author.mention}\n"
+            if len(coaches)==0:
+                msg+="No coaches found"
+            for coach in coaches:
+                msg+=f"**{coach.name} collection:**\n"
+                msg+=f"{format_pack(coach.collection)}"
+            await client.send_message(message.channel, msg)
+
     if message.content.startswith('!list'):
-        coach = Coach.load_coach(message.author)
+        coach = Coach.load_coach(str(message.author))
         msg=f"{message.author.mention}\n**Collection**:\n"
         msg+=""
         msg+=f"{format_pack(coach.collection)}"
-        await client.send_message(message.channel, msg)
+        await client.send_message(message.author, msg)
+        await client.send_message(message.channel, "Collection sent to PM")
 
     if message.content.startswith('!genpack'):
-        cmd = message.content.lower()
-        if check_command(cmd):
+        if check_gen_command(cmd):
             args = cmd.split()
             quality = args[1]
             ptype = args[2]
@@ -57,6 +79,9 @@ async def on_message(message):
 
             msg=f"{message.author.mention}\n{format_pack(pack)}"
             await client.send_message(message.channel, msg)
+
+            # export
+            imperiumsheet.store_all_cards()
         else:
             await client.send_message(message.channel, gen_help())
 @client.event
@@ -68,11 +93,11 @@ async def on_ready():
 
 def format_pack(pack):
     msg = ""
-    msg+="-" * 65 + "\n"
+    #msg+="-" * 65 + "\n"
     for card in pack:
         msg+=rarity_emoji(card["Rarity"])
         msg+=f'**{card["Card Name"]}** ({card["Rarity"]} {card["Race"]} {card["Type"]} Card)\n'
-        msg+="-" * 65 + "\n"
+        #msg+="-" * 65 + "\n"
     return msg
 
 def gen_help():
@@ -87,7 +112,12 @@ def gen_help():
     msg+="```"
     return msg
 
-def check_command(command):
+def is_private_admin_channel(dchannel):
+    if dchannel.is_private and "admin" in dchannel.name:
+        return True
+    return False
+
+def check_gen_command(command):
     args = command.split()
     length = len(args)
     if length not in [3,4]:

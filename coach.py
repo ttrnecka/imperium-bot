@@ -26,6 +26,23 @@ class Coach:
     def add_to_collection(self,pack):
         self.collection.extend(pack)
 
+    # returns array of Coaches that meet the name
+    def find_by_name(name):
+        coaches = []
+        name = name.lower()
+        for root, dirs, files in os.walk(Coach.coaches_folder()):
+            for filename in files:
+                if name in filename.lower():
+                    coaches.append(Coach.load_coach(os.path.splitext(filename)[0]))
+        return coaches
+
+    def all():
+        coaches = []
+        for root, dirs, files in os.walk(Coach.coaches_folder()):
+            for filename in files:
+                coaches.append(Coach.load_coach(os.path.splitext(filename)[0]))
+        return coaches
+
     @staticmethod
     def coach_file(name):
         fn = os.path.join(Coach.coaches_folder(), f"{name}.yaml")
@@ -39,3 +56,7 @@ class Coach:
         except FileExistsError:
             pass
         return folder
+
+if __name__ == "__main__":
+    print(Coach.find_by_name("tomast")[0].collection)
+
