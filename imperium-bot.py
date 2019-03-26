@@ -52,7 +52,7 @@ async def on_message(message):
             for coach in coaches:
                 msg.add(f"**{coach.name} collection:**\n")
                 msg.add("-" * 65 + "\n")
-                msg.add(f"{format_pack(coach.collection)}")
+                msg.add(f"{format_pack(coach.collection_with_count())}")
                 msg.add("-" * 65 + "\n\n")
             
             await msg.send()
@@ -64,7 +64,7 @@ async def on_message(message):
 
         msg = LongMessage(client,message.author)
         msg.add("**Collection**:\n\n")
-        msg.add(f"{format_pack(coach.collection,order)}")
+        msg.add(f"{format_pack(coach.collection_with_count(),order)}")
         await msg.send()
         await client.send_message(message.channel, "Collection sent to PM")
 
@@ -106,8 +106,12 @@ def format_pack(pack,is_sorted=True):
         pack = sorted(pack, key=lambda x: (rarityorder[x["Rarity"]],x["Card Name"]))
     msg = ""
     for card in pack:
+        if imperiumsheet.QTY in card:
+            for c in str(card[imperiumsheet.QTY]):
+                msg+=number_emoji(c)
+            msg+=" x "
         msg+=rarity_emoji(card["Rarity"])
-        msg+=f'**{card["Card Name"]}** ({card["Rarity"]} {card["Race"]} {card["Type"]} Card)\n'
+        msg+=f' **{card["Card Name"]}** ({card["Rarity"]} {card["Race"]} {card["Type"]} Card)\n'
     return msg
 
 def gen_help():
@@ -155,6 +159,22 @@ def rarity_emoji(rarity):
     }
     return switcher.get(rarity, "")
 
+def number_emoji(number):
+    switcher = {
+        "0": ":zero:",
+        "1": ":one:",
+        "2": ":two:",
+        "3": ":three:",
+        "4": ":four:",
+        "5": ":five:",
+        "6": ":six:",
+        "7": ":seven:",
+        "8": ":eight:",
+        "9": ":nine:",
+
+    }
+    return switcher.get(number, "")
+
 class LongMessage:
     def __init__(self,client,channel):
         self.limit = 2000
@@ -169,12 +189,19 @@ class LongMessage:
         for chunk in self.chunks():
             await self.client.send_message(self.channel, chunk)
 
+    def lines(self):
+        lines = []
+        for part in self.parts:
+            lines.extend(part.split("\n"))
+        return lines
+
     def chunks(self):
+        lines = self.lines()
         while True:
             msg=""
-            if not self.parts:
+            if not lines:
                 break
-            while len(self.parts)>0 and len(msg + self.parts[0]) < self.limit:
-                msg += self.parts.pop(0)
+            while len(lines)>0 and len(msg + lines[0]) < self.limit:
+                msg += lines.pop(0) + "\n"
             yield msg
 client.run(TOKEN)

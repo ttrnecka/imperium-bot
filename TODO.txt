@@ -1,9 +1,8 @@
 pack generator error handling - if error revert
 pack cost
-
 info card command
-include starter pack
-document
+document command
+new generator logic
 
 
 DONE
@@ -11,3 +10,5 @@ pack list sorting
 adminlist - separate coaches
 long message sending
 generator - remove budget from player and training - updated help
+starter pack is u=included
+card summary

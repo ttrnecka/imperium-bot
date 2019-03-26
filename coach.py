@@ -17,7 +17,7 @@ class Coach:
     def load_coach(name):
         if os.path.isfile(Coach.coach_file(name)) :
             stream = open(Coach.coach_file(name), 'r')
-            coach = yaml.load(stream)
+            coach = yaml.load(stream, Loader = yaml.Loader)
             stream.close()
         else:
             coach = Coach(name)
@@ -25,6 +25,16 @@ class Coach:
 
     def add_to_collection(self,pack):
         self.collection.extend(pack)
+    
+    def collection_with_count(self):
+        new_collection = {}
+        for card in self.collection:
+            if card["Card Name"] in new_collection:
+                new_collection[card["Card Name"]]["Quantity"] += 1
+            else:
+                new_collection[card["Card Name"]] = card
+                new_collection[card["Card Name"]]["Quantity"] = 1
+        return list(new_collection.values())
 
     # returns array of Coaches that meet the name
     def find_by_name(name):

@@ -9,18 +9,23 @@ ROOT = os.path.dirname(__file__)
 SPREADSHEET_ID = "1t5IoiIjPAS2CD63P6xI4hWwx9c1SEzW9AL1LJ4LK6og"
 MASTERSHEET_ID = "1wL-qA6yYxaYkpvzL7KfwxNzJOsj0E17AEwSndSp7vNY"
 MASTER_NAME = "Master List"
-MASTER_LIST_HEADER = [
+
+QTY = "Quantity"
+
+CARD_HEADER = [
     "Coach",
     "Rarity",
-    "Race",
-    "Card Name",
     "Type",
     "Subtype",
+    "Card Name",
+    "Race",
     "Description",
 ]
+MASTER_LIST_HEADER = ["Coach"] + CARD_HEADER
 
-ALL_CARDS = "All Cards"
-TRAINING_CARDS = "Training Cards"
+ALL_CARDS_SHEET = "All Cards"
+TRAINING_CARDS_SHEET = "Training Cards"
+STARTER_PACK_SHEET="Starter Pack"
 MIXED_TEAMS = {
     "aog": "Alliance of Goodness",
     "au": "Afterlife United",
@@ -39,6 +44,7 @@ MIXED_TEAMS = {
 scope = ['https://spreadsheets.google.com/feeds']
 creds = ServiceAccountCredentials.from_json_keyfile_name(os.path.join(ROOT, 'client_secret.json'), scope)
 client = gspread.authorize(creds)
+
 
 def store_all_cards():
     ws = client.open_by_key(MASTERSHEET_ID)
@@ -68,9 +74,20 @@ def store_all_cards():
             cell.value = cards[cell.row-1][MASTER_LIST_HEADER[cell.col-1]]
     sheet.update_cells(cell_list)
 
-def get_all_cards():
-    sheet = client.open_by_key(SPREADSHEET_ID).worksheet(ALL_CARDS)
+def all_cards():
+    sheet = client.open_by_key(SPREADSHEET_ID).worksheet(ALL_CARDS_SHEET)
     return sheet.get_all_records()
+
+def starter_pack():
+    sheet = client.open_by_key(SPREADSHEET_ID).worksheet(STARTER_PACK_SHEET)
+    summed_cards = sheet.get_all_records()
+    cards = []
+    for card in summed_cards:
+        count = card[QTY]
+        del card[QTY]
+        for i in range(count):
+            cards.append(card)
+    return cards
 
 def generate_player_pack(team,quality="budget"):
     pack = []
@@ -84,7 +101,7 @@ def generate_player_pack(team,quality="budget"):
 
 def generate_training_pack(quality="budget"):
     pack = []
-    cards = client.open_by_key(SPREADSHEET_ID).worksheet(TRAINING_CARDS).get_all_records()
+    cards = client.open_by_key(SPREADSHEET_ID).worksheet(TRAINING_CARDS_SHEET).get_all_records()
 
     pack.append(pick(cards,"premium"))
     pack.append(pick(cards,quality))
@@ -94,7 +111,7 @@ def generate_training_pack(quality="budget"):
 
 def generate_booster_pack(quality="budget"):
     pack = []
-    cards = client.open_by_key(SPREADSHEET_ID).worksheet(ALL_CARDS).get_all_records()
+    cards = client.open_by_key(SPREADSHEET_ID).worksheet(ALL_CARDS_SHEET).get_all_records()
 
     pack.append(pick(cards,"premium"))
     pack.append(pick(cards,quality))
@@ -130,4 +147,4 @@ def pick(cards,quality="budget"):
 
 
 if __name__ == "__main__":
-    print(store_all_cards())
+    print(starter_pack())
