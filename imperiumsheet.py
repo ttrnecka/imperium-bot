@@ -78,72 +78,6 @@ def all_cards():
     sheet = client.open_by_key(SPREADSHEET_ID).worksheet(ALL_CARDS_SHEET)
     return sheet.get_all_records()
 
-def starter_pack():
-    sheet = client.open_by_key(SPREADSHEET_ID).worksheet(STARTER_PACK_SHEET)
-    summed_cards = sheet.get_all_records()
-    cards = []
-    for card in summed_cards:
-        count = card[QTY]
-        del card[QTY]
-        for i in range(count):
-            cards.append(card)
-    return cards
-
-def generate_player_pack(team,quality="budget"):
-    pack = []
-    cards = client.open_by_key(SPREADSHEET_ID).worksheet(f"{MIXED_TEAMS[team]} Cards").get_all_records()
-
-    pack.append(pick(cards,"premium"))
-    pack.append(pick(cards,quality))
-    pack.append(pick(cards,quality))
-
-    return pack
-
-def generate_training_pack(quality="budget"):
-    pack = []
-    cards = client.open_by_key(SPREADSHEET_ID).worksheet(TRAINING_CARDS_SHEET).get_all_records()
-
-    pack.append(pick(cards,"premium"))
-    pack.append(pick(cards,quality))
-    pack.append(pick(cards,quality))
-
-    return pack
-
-def generate_booster_pack(quality="budget"):
-    pack = []
-    cards = client.open_by_key(SPREADSHEET_ID).worksheet(ALL_CARDS_SHEET).get_all_records()
-
-    pack.append(pick(cards,"premium"))
-    pack.append(pick(cards,quality))
-    pack.append(pick(cards,quality))
-
-    pack.append(pick(cards,quality))
-    pack.append(pick(cards,quality))
-
-    return pack
-
-def pick(cards,quality="budget"):
-
-    quality = quality.capitalize()
-    max_weight = int(cards[-1][f"Weighted Value ({quality})"])
-    pick_weight = random.randint(0,max_weight)
-
-    for i,card in enumerate(cards):
-        # ignore cards with empty weighted value
-        if card[f"Weighted Value ({quality})"]=="":
-            continue
-
-        # if the pick and current values are equal it is the card
-        current_weight = int(card[f"Weighted Value ({quality})"])
-        if current_weight == pick_weight:
-            return card
-        # else if the current os already higher we select the current or the previous, whichever is closer
-        elif current_weight > pick_weight:
-            # pick the one that is closer
-            if (current_weight - pick_weight) > (pick_weight - int(cards[i-1][f"Weighted Value ({quality})"])):
-                return cards[i-1]
-            else:
-                return card
 
 PACK_PRICES = {
     "booster_budget": 5,
@@ -177,15 +111,22 @@ class Pack:
             q = "budget" if "budget" in self.pack_type else "premium"
             self.cards = self.__booster_pack(q)
 
+    def description(self):
+        desc = ' '.join(self.pack_type.split('_')).capitalize()
+        if hasattr(self,'team'):
+            desc+=" " + MIXED_TEAMS[self.team]
+        desc+=" pack"
 
-    def __starter_pack():
+        return desc
+    
+    def __starter_pack(self):
         sheet = client.open_by_key(SPREADSHEET_ID).worksheet(STARTER_PACK_SHEET)
         summed_cards = sheet.get_all_records()
         cards = []
         for card in summed_cards:
             count = card[QTY]
             del card[QTY]
-            for i in range(count):
+            for _ in range(count):
                 cards.append(card)
         return cards
 
@@ -193,7 +134,7 @@ class Pack:
         cards = []
         quality = "premium"
         all_cards = client.open_by_key(SPREADSHEET_ID).worksheet(f"{MIXED_TEAMS[self.team]} Cards").get_all_records()
-        for i in range(3):
+        for _ in range(3):
             cards.append(self.__pick(all_cards,quality))
         return cards
 
@@ -201,7 +142,7 @@ class Pack:
         cards = []
         quality = "premium"
         all_cards = client.open_by_key(SPREADSHEET_ID).worksheet(TRAINING_CARDS_SHEET).get_all_records()
-        for i in range(3):
+        for _ in range(3):
             cards.append(self.__pick(all_cards,quality))
         return cards
 
@@ -209,8 +150,8 @@ class Pack:
         cards = []
         all_cards = client.open_by_key(SPREADSHEET_ID).worksheet(ALL_CARDS_SHEET).get_all_records()
 
-        cards.append(pick(all_cards,"premium"))
-        for i in range(4):
+        cards.append(self.__pick(all_cards,"premium"))
+        for _ in range(4):
             cards.append(self.__pick(all_cards,quality))
         return cards
 

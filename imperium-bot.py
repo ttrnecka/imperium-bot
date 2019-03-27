@@ -38,11 +38,14 @@ async def on_message(message):
     # admin commands
     if message.content.startswith('!admin'):
         if not is_private_admin_channel(message.channel):
-            await client.send_message(message.channel, "Insuficient rights")
+            emsg="Insuficient rights"
+            logger.error(emsg)
+            await client.send_message(message.channel, emsg)
             return
         if message.content.startswith('!adminlist'):
             if len(args)==1:
-                await client.send_message(message.channel, "Username missing")
+                emsg="Username missing"
+                await client.send_message(message.channel, emsg)
                 return
             coaches = Coach.find_by_name(args[1])
             msg = LongMessage(client,message.channel)
@@ -80,42 +83,37 @@ async def on_message(message):
                 team = args[2]
                 pack = imperiumsheet.Pack(ptype,team = team)
                 pack.generate()
-                #pack = imperiumsheet.generate_player_pack(team,"premium")
             elif ptype=="training":
                 pack = imperiumsheet.Pack(ptype)
                 pack.generate()
-                #pack = imperiumsheet.generate_training_pack("premium")
             elif ptype=="booster":
                 ptype = "booster_budget" if len(args)<3 else f"booster_{args[2]}"
                 pack = imperiumsheet.Pack(ptype)
                 pack.generate()
-                #quality = "budget" if len(args)<3 else args[2]
-                #pack = imperiumsheet.generate_booster_pack(quality)
-
-            pack_msg = ' '.join(ptype.split('_')).capitalize()
-            if 'team' in locals():
-                pack_msg+=" " + imperiumsheet.MIXED_TEAMS[team]
 
             # add error handling eventually
             coach = Coach.load_coach(str(message.author))
-            t = Transaction(pack_msg,pack.price)
+            t = Transaction(pack.description(),pack.price)
             coach.account.make_transaction(t)
             if t.confirmed:
                 coach.add_to_collection(pack.cards)
                 coach.store_coach()
                 msg = LongMessage(client,message.channel)
-                msg.add(f"**{pack_msg}** pack for **{message.author}** - **{pack.price}** coins:\n")
+                msg.add(f"**{pack.description()}** for **{message.author}** - **{pack.price}** coins:\n")
                 msg.add(f"{format_pack(pack.cards)}\n")
-                msg.add(f"Remaining coins: {coach.account.cash}")
+                msg.add(f"Remaining coins: **{coach.account.cash}**")
                 await msg.send()
+                # export
                 imperiumsheet.store_all_cards()
             else:
+                emsg = "Transaction could not complete"
                 msg = LongMessage(client,message.channel)
-                msg.add("Transaction could not complete")
+                msg.add(emsg)
+                logger.error(emsg)
                 await msg.send()
-            # export
         else:
             await client.send_message(message.channel, gen_help())
+
 @client.event
 async def on_ready():
     logger.info('Logged in as')
@@ -140,11 +138,16 @@ def gen_help():
     msg="```"
     msg+="USAGE:\n"
     msg+="!genpack <type> [mixed_team] [quality]\n"
-    msg+="\t<type> - player, training, booster\n"
-    msg+="\t[mixed_team]: (player only)\n"
+    msg+="\t<type>:\n"
+    msg+="\t\tplayer\n"
+    msg+="\t\ttraining\n"
+    msg+="\t\tbooster\n"
+    msg+="\t[mixed_team]: (player type only)\n"
     for key, name in imperiumsheet.MIXED_TEAMS.items():
         msg+=f"\t\t{key} - {name}\n"
-    msg+="\t[quality] - budget, premium (booster only)\n"
+    msg+="\t[quality]: (booster type only)\n"
+    msg+="\t\tbudget (default)\n"
+    msg+="\t\tpremium\n"
     msg+="```"
     return msg
 
@@ -226,4 +229,5 @@ class LongMessage:
             while len(lines)>0 and len(msg + lines[0]) < self.limit:
                 msg += lines.pop(0) + "\n"
             yield msg
+
 client.run(TOKEN)

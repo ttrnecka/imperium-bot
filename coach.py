@@ -1,6 +1,7 @@
 import os
 import yaml
 import time
+import logging
 
 ROOT = os.path.dirname(__file__)
 
@@ -11,13 +12,14 @@ class Coach:
         self.name = name
         self.collection = []
         self.decks = []
-        self.account = Account(INIT_CASH)
+        self.account = Account(name,INIT_CASH)
 
     def store_coach(self):
         stream = open(self.coach_file(self.name), 'w')
         yaml.dump(self, stream)
         stream.close()
 
+    @staticmethod
     def load_coach(name):
         if os.path.isfile(Coach.coach_file(name)) :
             stream = open(Coach.coach_file(name), 'r')
@@ -27,7 +29,7 @@ class Coach:
             coach = Coach(name)
         # handlign the case when old coach account is loaded - can be removed after cleaup
         if not hasattr(coach,"account"):
-            coach.account = Account(INIT_CASH)
+            coach.account = Account(name,INIT_CASH)
         return coach
 
     def add_to_collection(self,pack):
@@ -44,18 +46,20 @@ class Coach:
         return list(new_collection.values())
 
     # returns array of Coaches that meet the name
+    @staticmethod
     def find_by_name(name):
         coaches = []
         name = name.lower()
-        for root, dirs, files in os.walk(Coach.coaches_folder()):
+        for _, _, files in os.walk(Coach.coaches_folder()):
             for filename in files:
                 if name in filename.lower():
                     coaches.append(Coach.load_coach(os.path.splitext(filename)[0]))
         return coaches
 
+    @staticmethod
     def all():
         coaches = []
-        for root, dirs, files in os.walk(Coach.coaches_folder()):
+        for _, _, files in os.walk(Coach.coaches_folder()):
             for filename in files:
                 coaches.append(Coach.load_coach(os.path.splitext(filename)[0]))
         return coaches
@@ -75,8 +79,16 @@ class Coach:
         return folder
 
 class Account:
-    def __init__(self,cash=15):
+    
+    logger = logging.getLogger('transaction')
+    logger.setLevel(logging.DEBUG)
+    handler = logging.FileHandler(filename=os.path.join(ROOT, 'transaction.log'), encoding='utf-8', mode='a')
+    handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+    logger.addHandler(handler)  
+
+    def __init__(self,coach_name,cash=15):
         self.cash = cash
+        self.coach_name = coach_name
         self.transactions = []
 
     def make_transaction(self,transaction):
@@ -87,13 +99,16 @@ class Account:
         self.cash -= transaction.price
         transaction.confirm()
         self.transactions.append(transaction)
+        Account.logger.info(f"{self.coach_name}: {transaction.comodity} for {transaction.price}")
 
         return transaction
+
+
 
 class Transaction:
     """
     Simple 1 comodity transaction used for pack generators
-    """
+    """  
     def __init__(self,comodity,price):
         self.price = price
         self.comodity = comodity

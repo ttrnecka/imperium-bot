@@ -3,7 +3,9 @@ pack generator/transaction error handling - if error revert
 info card command
 document command
 new generator logic
-
+add cards to transaction info
+list cmd help
+adminbank command
 
 DONE
 pack list sorting
