@@ -5,7 +5,7 @@ import discord
 import imperiumsheet
 import random
 import os
-from coach import Coach
+from coach import Coach, Transaction
 
 ROOT = os.path.dirname(__file__)
 
@@ -46,15 +46,16 @@ async def on_message(message):
                 return
             coaches = Coach.find_by_name(args[1])
             msg = LongMessage(client,message.channel)
-            #msg.add(f"{message.author.mention}\n")
             if len(coaches)==0:
                 msg.add("No coaches found")
             for coach in coaches:
-                msg.add(f"**{coach.name} collection:**\n")
-                msg.add("-" * 65 + "\n")
+                msg.add(f"Coach **{coach.name}**\n")
+                msg.add(f"**Bank:** {coach.account.cash} coins\n")
+                msg.add("**Collection**:")
+                msg.add("-" * 65 + "")
                 msg.add(f"{format_pack(coach.collection_with_count())}")
-                msg.add("-" * 65 + "\n\n")
-            
+                msg.add("-" * 65 + "\n")
+
             await msg.send()
 
     # list commands
@@ -63,8 +64,11 @@ async def on_message(message):
         order = False if "bydate" in message.content else True
 
         msg = LongMessage(client,message.author)
-        msg.add("**Collection**:\n\n")
+        msg.add(f"**Bank:** {coach.account.cash} coins\n")
+        msg.add("**Collection**:\n")
+        msg.add("-" * 65 + "")
         msg.add(f"{format_pack(coach.collection_with_count(),order)}")
+        msg.add("-" * 65 + "\n")
         await msg.send()
         await client.send_message(message.channel, "Collection sent to PM")
 
@@ -74,24 +78,42 @@ async def on_message(message):
             ptype = args[1]
             if ptype=="player":
                 team = args[2]
-                pack = imperiumsheet.generate_player_pack(team,"premium")
+                pack = imperiumsheet.Pack(ptype,team = team)
+                pack.generate()
+                #pack = imperiumsheet.generate_player_pack(team,"premium")
             elif ptype=="training":
-                pack = imperiumsheet.generate_training_pack("premium")
+                pack = imperiumsheet.Pack(ptype)
+                pack.generate()
+                #pack = imperiumsheet.generate_training_pack("premium")
             elif ptype=="booster":
-                quality = "budget" if len(args)<3 else args[2]
-                pack = imperiumsheet.generate_booster_pack(quality)
+                ptype = "booster_budget" if len(args)<3 else f"booster_{args[2]}"
+                pack = imperiumsheet.Pack(ptype)
+                pack.generate()
+                #quality = "budget" if len(args)<3 else args[2]
+                #pack = imperiumsheet.generate_booster_pack(quality)
+
+            pack_msg = ' '.join(ptype.split('_')).capitalize()
+            if 'team' in locals():
+                pack_msg+=" " + imperiumsheet.MIXED_TEAMS[team]
 
             # add error handling eventually
             coach = Coach.load_coach(str(message.author))
-            coach.add_to_collection(pack)
-            coach.store_coach()
-
-            msg = LongMessage(client,message.channel)
-            msg.add(f"Pack for **{message.author}**:\n{format_pack(pack)}")
-            await msg.send()
-
+            t = Transaction(pack_msg,pack.price)
+            coach.account.make_transaction(t)
+            if t.confirmed:
+                coach.add_to_collection(pack.cards)
+                coach.store_coach()
+                msg = LongMessage(client,message.channel)
+                msg.add(f"**{pack_msg}** pack for **{message.author}** - **{pack.price}** coins:\n")
+                msg.add(f"{format_pack(pack.cards)}\n")
+                msg.add(f"Remaining coins: {coach.account.cash}")
+                await msg.send()
+                imperiumsheet.store_all_cards()
+            else:
+                msg = LongMessage(client,message.channel)
+                msg.add("Transaction could not complete")
+                await msg.send()
             # export
-            imperiumsheet.store_all_cards()
         else:
             await client.send_message(message.channel, gen_help())
 @client.event
@@ -136,7 +158,7 @@ def check_gen_command(command):
     length = len(args)
     if length not in [2,3]:
         return False
-        
+
     if args[1] not in GEN_PACKS:
         return False
     # training/booster without quality
@@ -145,7 +167,7 @@ def check_gen_command(command):
     # booster with allowed quality
     if length == 3 and args[1]=="booster" and args[2] not in GEN_QUALITY:
         return False
-    # player with teams 
+    # player with teams
     if length == 3 and args[1]=="player" and args[2] not in imperiumsheet.MIXED_TEAMS.keys():
         return False
     return True

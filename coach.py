@@ -1,13 +1,17 @@
 import os
 import yaml
+import time
 
 ROOT = os.path.dirname(__file__)
+
+INIT_CASH = 15
 
 class Coach:
     def __init__(self,name):
         self.name = name
         self.collection = []
         self.decks = []
+        self.account = Account(INIT_CASH)
 
     def store_coach(self):
         stream = open(self.coach_file(self.name), 'w')
@@ -21,11 +25,14 @@ class Coach:
             stream.close()
         else:
             coach = Coach(name)
+        # handlign the case when old coach account is loaded - can be removed after cleaup
+        if not hasattr(coach,"account"):
+            coach.account = Account(INIT_CASH)
         return coach
 
     def add_to_collection(self,pack):
         self.collection.extend(pack)
-    
+
     def collection_with_count(self):
         new_collection = {}
         for card in self.collection:
@@ -67,6 +74,36 @@ class Coach:
             pass
         return folder
 
-if __name__ == "__main__":
-    print(Coach.find_by_name("tomast")[0].collection)
+class Account:
+    def __init__(self,cash=15):
+        self.cash = cash
+        self.transactions = []
+
+    def make_transaction(self,transaction):
+        # do nothing
+        if self.cash < transaction.price or transaction.confirmed:
+            return transaction
+
+        self.cash -= transaction.price
+        transaction.confirm()
+        self.transactions.append(transaction)
+
+        return transaction
+
+class Transaction:
+    """
+    Simple 1 comodity transaction used for pack generators
+    """
+    def __init__(self,comodity,price):
+        self.price = price
+        self.comodity = comodity
+        self.created_at = time.time()
+        self.confirmed = False
+
+    def confirm(self):
+        self.confirmed = True
+        self.confirmed_at = time.time()
+
+
+#if __name__ == "__main__":
 

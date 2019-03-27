@@ -145,6 +145,100 @@ def pick(cards,quality="budget"):
             else:
                 return card
 
+PACK_PRICES = {
+    "booster_budget": 5,
+    "booster_premium": 20,
+    "player": 25,
+    "training": 10,
+    "starter": 0
+}
+class Pack:
+    def __init__(self,ptype="booster_budget",team = None):
+        if ptype not in PACK_PRICES:
+            raise ValueError(f"Pack type {ptype} unknow")
+        self.pack_type = ptype
+        if self.pack_type == "player":
+            if not team:
+                raise  ValueError(f"Missing team value for {ptype} pack")
+            elif team.lower() not in MIXED_TEAMS:
+                raise  ValueError(f"Team {team} unknow")
+            else:
+                self.team = team.lower()
+        self.price = PACK_PRICES[ptype]
+
+    def generate(self):
+        if self.pack_type == "starter":
+            self.cards = self.__starter_pack()
+        if self.pack_type == "player":
+            self.cards = self.__player_pack()
+        if self.pack_type == "training":
+            self.cards = self.__training_pack()
+        if self.pack_type in ["booster_budget","booster_premium"] :
+            q = "budget" if "budget" in self.pack_type else "premium"
+            self.cards = self.__booster_pack(q)
+
+
+    def __starter_pack():
+        sheet = client.open_by_key(SPREADSHEET_ID).worksheet(STARTER_PACK_SHEET)
+        summed_cards = sheet.get_all_records()
+        cards = []
+        for card in summed_cards:
+            count = card[QTY]
+            del card[QTY]
+            for i in range(count):
+                cards.append(card)
+        return cards
+
+    def __player_pack(self):
+        cards = []
+        quality = "premium"
+        all_cards = client.open_by_key(SPREADSHEET_ID).worksheet(f"{MIXED_TEAMS[self.team]} Cards").get_all_records()
+        for i in range(3):
+            cards.append(self.__pick(all_cards,quality))
+        return cards
+
+    def __training_pack(self):
+        cards = []
+        quality = "premium"
+        all_cards = client.open_by_key(SPREADSHEET_ID).worksheet(TRAINING_CARDS_SHEET).get_all_records()
+        for i in range(3):
+            cards.append(self.__pick(all_cards,quality))
+        return cards
+
+    def __booster_pack(self,quality="budget"):
+        cards = []
+        all_cards = client.open_by_key(SPREADSHEET_ID).worksheet(ALL_CARDS_SHEET).get_all_records()
+
+        cards.append(pick(all_cards,"premium"))
+        for i in range(4):
+            cards.append(self.__pick(all_cards,quality))
+        return cards
+
+    def __pick(self,cards,quality="budget"):
+
+        quality = quality.capitalize()
+        max_weight = int(cards[-1][f"Weighted Value ({quality})"])
+        pick_weight = random.randint(0,max_weight)
+
+        for i,card in enumerate(cards):
+            # ignore cards with empty weighted value
+            if card[f"Weighted Value ({quality})"]=="":
+                continue
+
+            # if the pick and current values are equal it is the card
+            current_weight = int(card[f"Weighted Value ({quality})"])
+            if current_weight == pick_weight:
+                return card
+            # else if the current os already higher we select the current or the previous, whichever is closer
+            elif current_weight > pick_weight:
+                # pick the one that is closer
+                if (current_weight - pick_weight) > (pick_weight - int(cards[i-1][f"Weighted Value ({quality})"])):
+                    return cards[i-1]
+                else:
+                    return card
+
 
 if __name__ == "__main__":
-    print(starter_pack())
+    p = Pack("booster_premium", team="Hl")
+    p.generate()
+    print(p.cards)

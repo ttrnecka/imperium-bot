@@ -1,5 +1,5 @@
-pack generator error handling - if error revert
-pack cost
+pack generator/transaction error handling - if error revert
+
 info card command
 document command
 new generator logic
@@ -12,3 +12,5 @@ long message sending
 generator - remove budget from player and training - updated help
 starter pack is u=included
 card summary
+pack cost
+transaction
