@@ -5,6 +5,7 @@ import discord
 import imperiumsheet
 import random
 import os
+import time
 from coach import Coach, Transaction
 
 ROOT = os.path.dirname(__file__)
@@ -98,11 +99,16 @@ async def on_message(message):
             if t.confirmed:
                 coach.add_to_collection(pack.cards)
                 coach.store_coach()
-                msg = LongMessage(client,message.channel)
-                msg.add(f"**{pack.description()}** for **{message.author}** - **{pack.price}** coins:\n")
-                msg.add(f"{format_pack(pack.cards)}\n")
-                msg.add(f"Remaining coins: **{coach.account.cash}**")
-                await msg.send()
+                unp = Unpacker(client,message.channel)
+                unp.pre_message.add(f"**{pack.description()}** for **{message.author}** - **{pack.price}** coins:\n")
+                unp.post_message.add(f"Remaining coins: **{coach.account.cash}**")
+                unp.cards_messages.extend(f"{format_pack(pack.cards)}".split("\n"))
+                unp.reveal_cards()
+                #msg = LongMessage(client,message.channel)
+                #msg.add(f"**{pack.description()}** for **{message.author}** - **{pack.price}** coins:\n")
+                #msg.add(f"{format_pack(pack.cards)}\n")
+                #msg.add(f"Remaining coins: **{coach.account.cash}**")
+                #await msg.send()
                 # export
                 imperiumsheet.store_all_cards()
             else:
@@ -229,5 +235,26 @@ class LongMessage:
             while len(lines)>0 and len(msg + lines[0]) < self.limit:
                 msg += lines.pop(0) + "\n"
             yield msg
+
+class Unpacker:
+    def __init__(self,client,channel):
+        self.pre_message = LongMessage(client,channel)
+        self.post_message = LongMessage(client,channel)
+        self.cards_messages = []
+        self.client = client
+        self.channel = channel
+
+    async def send(self):
+        await self.pre_message.send()
+        await self.reveal_cards()
+        await self.post_message.send()
+    
+    async def reveal_cards(self):
+        for card_message in self.cards_messages:
+            for i in range(3,-1,-1):
+                message = await self.client.send_message(self.channel, f"Revealing card in {i}s")
+                time.sleep(1)
+                await self.client.delete_message(message)
+            await self.client.send_message(self.channel, card_message)
 
 client.run(TOKEN)
