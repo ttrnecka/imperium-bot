@@ -101,9 +101,11 @@ async def on_message(message):
                 coach.store_coach()
                 unp = Unpacker(client,message.channel)
                 unp.pre_message.add(f"**{pack.description()}** for **{message.author}** - **{pack.price}** coins:\n")
+                unp.pre_message.add(":gift:\n----\n")
+                unp.post_message.add("----\n:tada:\n")
                 unp.post_message.add(f"Remaining coins: **{coach.account.cash}**")
-                unp.cards_messages.extend(f"{format_pack(pack.cards)}".split("\n"))
-                unp.reveal_cards()
+                unp.cards_messages.extend(format_pack(pack.cards).strip("\n").split("\n"))
+                await unp.send()
                 #msg = LongMessage(client,message.channel)
                 #msg.add(f"**{pack.description()}** for **{message.author}** - **{pack.price}** coins:\n")
                 #msg.add(f"{format_pack(pack.cards)}\n")
@@ -251,10 +253,11 @@ class Unpacker:
     
     async def reveal_cards(self):
         for card_message in self.cards_messages:
-            for i in range(3,-1,-1):
-                message = await self.client.send_message(self.channel, f"Revealing card in {i}s")
+            secs = 3
+            message = await self.client.send_message(self.channel, f"Revealing card in {secs}s")
+            for i in range(secs-1,0,-1):
                 time.sleep(1)
-                await self.client.delete_message(message)
-            await self.client.send_message(self.channel, card_message)
+                await self.client.edit_message(message, f"Revealing card in {i}s")
+            await self.client.edit_message(message, card_message)
 
 client.run(TOKEN)
