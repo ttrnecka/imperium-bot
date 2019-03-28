@@ -116,6 +116,17 @@ class DiscordCommand:
         return msg
 
     @classmethod
+    def adminbank_help(cls):
+        msg="```"
+        msg+="USAGE:\n"
+        msg+="!adminbank <amount> <coach> <reason>\n"
+        msg+="\t<amount>: number of coins to add to bank, if negative is used, it will be deducted from bank\n"
+        msg+="\t<coach>: coach discord name, must be unique\n"
+        msg+="\t<reason>: describe why you are changing the coach bank\n"
+        msg+="```"
+        return msg
+
+    @classmethod
     def check_gen_command(cls,command):
         args = command.split()
         length = len(args)
@@ -208,6 +219,55 @@ class DiscordCommand:
 
             await msg.send()
             return
+        if self.message.content.startswith('!adminbank'):
+            # require username argument
+            if len(self.args)<4:
+                emsg="Not enough arguments!!!\n"
+                await self.client.send_message(self.message.channel, emsg)
+                await self.client.send_message(self.message.channel, self.__class__.adminbank_help())
+                return
+
+            # amount must be int
+            if not RepresentsInt(self.args[1]):
+                emsg="<amount> is not whole number!!!\n"
+                await self.client.send_message(self.message.channel, emsg)
+                return
+
+            # find coach
+            coaches = Coach.find_by_name(self.args[2])
+            if len(coaches)==0:
+                emsg=f"<coach> {self.args[2]} not found!!!\n"
+                await self.client.send_message(self.message.channel, emsg)
+                return
+
+            if len(coaches)>1:
+                emsg=f"<coach> {self.args[2]} not uniqe!!!\n"
+                emsg="Select one: "
+                for coach in coaches:
+                    emsg+=coach
+                    emsg+=" "
+                await self.client.send_message(self.message.channel, emsg)
+                return
+
+            amount = int(self.args[1])
+            coach = coaches[0]
+            reason = ' '.join(str(x) for x in self.message.content.split(" ")[3:]) + " - admined by " + str(self.message.author)
+
+            t = Transaction(reason,-1*amount)
+            coach.account.make_transaction(t)
+            if t.confirmed:
+                coach.store_coach()
+                msg = LongMessage(self.client,self.message.channel)
+                msg.add(f"Bank for {coach.name} updated to **{coach.account.cash}** coins:\n")
+                msg.add(f"Note: {reason}\n")
+                msg.add(f"Change: {amount} coins")
+                await msg.send()
+            else:
+                emsg = "Transaction could not complete"
+                msg = LongMessage(self.client,self.message.channel)
+                msg.add(emsg)
+                logger.error(emsg)
+                await msg.send()
 
     async def __run_list(self):
         coach = Coach.load_coach(str(self.message.author))
@@ -258,6 +318,13 @@ class DiscordCommand:
                 logger.error(emsg)
                 await msg.send()
         else:
-            await self.client.send_message(self.message.channel, gen_help())
+            await self.client.send_message(self.message.channel, self.__class__.gen_help())
+
+def RepresentsInt(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
 
 client.run(TOKEN)
