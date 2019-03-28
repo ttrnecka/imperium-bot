@@ -79,12 +79,12 @@ class Coach:
         return folder
 
 class Account:
-    
+
     logger = logging.getLogger('transaction')
     logger.setLevel(logging.DEBUG)
     handler = logging.FileHandler(filename=os.path.join(ROOT, 'transaction.log'), encoding='utf-8', mode='a')
     handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
-    logger.addHandler(handler)  
+    logger.addHandler(handler)
 
     def __init__(self,coach_name,cash=15):
         self.cash = cash
@@ -108,7 +108,7 @@ class Account:
 class Transaction:
     """
     Simple 1 comodity transaction used for pack generators
-    """  
+    """
     def __init__(self,comodity,price):
         self.price = price
         self.comodity = comodity

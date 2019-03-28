@@ -6,7 +6,6 @@ new generator logic
 add cards to transaction info
 make list off all transactions (bank)
 list cmd help
-adminbank command
 
 DONE
 pack list sorting
@@ -17,3 +16,4 @@ starter pack is u=included
 card summary
 pack cost
 transaction
+adminbank command

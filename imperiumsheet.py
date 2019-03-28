@@ -118,7 +118,7 @@ class Pack:
         desc+=" pack"
 
         return desc
-    
+
     def __starter_pack(self):
         sheet = client.open_by_key(SPREADSHEET_ID).worksheet(STARTER_PACK_SHEET)
         summed_cards = sheet.get_all_records()
@@ -131,28 +131,18 @@ class Pack:
         return cards
 
     def __player_pack(self):
-        cards = []
-        quality = "premium"
         all_cards = client.open_by_key(SPREADSHEET_ID).worksheet(f"{MIXED_TEAMS[self.team]} Cards").get_all_records()
-        for _ in range(3):
-            cards.append(self.__pick(all_cards,quality))
-        return cards
+        return [self.__pick(all_cards,"premium") for _ in range(3)]
 
     def __training_pack(self):
-        cards = []
-        quality = "premium"
         all_cards = client.open_by_key(SPREADSHEET_ID).worksheet(TRAINING_CARDS_SHEET).get_all_records()
-        for _ in range(3):
-            cards.append(self.__pick(all_cards,quality))
-        return cards
+        return [self.__pick(all_cards,"premium") for _ in range(3)]
 
     def __booster_pack(self,quality="budget"):
         cards = []
         all_cards = client.open_by_key(SPREADSHEET_ID).worksheet(ALL_CARDS_SHEET).get_all_records()
-
         cards.append(self.__pick(all_cards,"premium"))
-        for _ in range(4):
-            cards.append(self.__pick(all_cards,quality))
+        cards.extend([self.__pick(all_cards,quality) for _ in range(4)])
         return cards
 
     def __pick(self,cards,quality="budget"):
