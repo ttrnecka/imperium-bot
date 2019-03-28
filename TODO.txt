@@ -1,4 +1,4 @@
-pack generator/transaction error handling - if error revert
+pack generator/transaction error handling - dry it up and finish for adm bank
 
 info card command
 document command

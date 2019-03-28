@@ -93,13 +93,18 @@ class Account:
 
     def make_transaction(self,transaction):
         # do nothing
-        if self.cash < transaction.price or transaction.confirmed:
-            return transaction
+        if self.cash < transaction.price:
+            raise TransactionError("Insuficient Funds")
+        if transaction.confirmed:
+            raise TransactionError("Double processing of transaction")
 
-        self.cash -= transaction.price
-        transaction.confirm()
-        self.transactions.append(transaction)
-        Account.logger.info(f"{self.coach_name}: {transaction.comodity} for {transaction.price}")
+        try:
+            self.cash -= transaction.price
+            transaction.confirm()
+            self.transactions.append(transaction)
+            Account.logger.info(f"{self.coach_name}: {transaction.comodity} for {transaction.price}")
+        except Exception as e:
+            raise TransactionError(str(e))
 
         return transaction
 
@@ -119,6 +124,8 @@ class Transaction:
         self.confirmed = True
         self.confirmed_at = time.time()
 
+class TransactionError(Exception):
+    pass
 
 #if __name__ == "__main__":
 
