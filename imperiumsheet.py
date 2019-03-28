@@ -171,5 +171,7 @@ class Pack:
 
 if __name__ == "__main__":
     p = Pack("booster_premium", team="Hl")
-    p.generate()
-    print(p.cards)
+    if type(p) is Pack:
+        print(True)
+    else:
+        print(False)

@@ -8,6 +8,13 @@ ROOT = os.path.dirname(__file__)
 INIT_CASH = 15
 
 class Coach:
+
+    logger = logging.getLogger('transaction')
+    logger.setLevel(logging.DEBUG)
+    handler = logging.FileHandler(filename=os.path.join(ROOT, 'transaction.log'), encoding='utf-8', mode='a')
+    handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+    logger.addHandler(handler)
+
     def __init__(self,name):
         self.name = name
         self.collection = []
@@ -77,37 +84,33 @@ class Coach:
         except FileExistsError:
             pass
         return folder
-
-class Account:
-
-    logger = logging.getLogger('transaction')
-    logger.setLevel(logging.DEBUG)
-    handler = logging.FileHandler(filename=os.path.join(ROOT, 'transaction.log'), encoding='utf-8', mode='a')
-    handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
-    logger.addHandler(handler)
-
-    def __init__(self,coach_name,cash=15):
-        self.cash = cash
-        self.coach_name = coach_name
-        self.transactions = []
-
+    
     def make_transaction(self,transaction):
         # do nothing
-        if self.cash < transaction.price:
+        if self.account.cash < transaction.price:
             raise TransactionError("Insuficient Funds")
         if transaction.confirmed:
             raise TransactionError("Double processing of transaction")
 
         try:
-            self.cash -= transaction.price
+            self.account.cash -= transaction.price
             transaction.confirm()
-            self.transactions.append(transaction)
-            Account.logger.info(f"{self.coach_name}: {transaction.comodity} for {transaction.price}")
+            self.account.transactions.append(transaction)
+            if hasattr(transaction.comodity, 'cards'):
+                self.add_to_collection(transaction.comodity.cards)
+            self.store_coach()
         except Exception as e:
             raise TransactionError(str(e))
+        else:
+            Coach.logger.info(f"{self.name}: {transaction.comodity} for {transaction.price}")
 
         return transaction
 
+class Account:
+    def __init__(self,coach_name,cash=15):
+        self.cash = cash
+        self.coach_name = coach_name
+        self.transactions = []
 
 
 class Transaction:

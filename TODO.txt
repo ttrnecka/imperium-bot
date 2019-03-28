@@ -1,11 +1,8 @@
-pack generator/transaction error handling - dry it up and finish for adm bank
-
-info card command
-document command
 new generator logic
-add cards to transaction info
 make list off all transactions (bank)
-list cmd help
+export coaches to sheet
+document command channel - clears it up at start
+
 
 DONE
 pack list sorting
@@ -17,3 +14,5 @@ card summary
 pack cost
 transaction
 adminbank command
+add cards to transaction info
+pack generator/transaction error handling - dry it up and finish for adm bank

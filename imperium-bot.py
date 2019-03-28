@@ -95,7 +95,7 @@ class DiscordCommand:
                 msg+=" x "
             msg+=cls.rarity_emoji(card["Rarity"])
             msg+=f' **{card["Card Name"]}** ({card["Rarity"]} {card["Race"]} {card["Type"]} Card)\n'
-        return msg
+        return msg.strip("\n")
 
     @classmethod
     def gen_help(cls):
@@ -172,6 +172,13 @@ class DiscordCommand:
 
         }
         return switcher.get(number, "")
+
+    async def transaction_error(self,error):
+        text = type(error).__name__ +": "+str(error)
+        msg = LongMessage(self.client,self.message.channel)
+        msg.add(text)
+        await msg.send()
+        logger.error(text)
 
     def __init__(self,dmessage,dclient):
         self.message = dmessage
@@ -251,24 +258,21 @@ class DiscordCommand:
 
             amount = int(self.args[1])
             coach = coaches[0]
-            reason = ' '.join(str(x) for x in self.message.content.split(" ")[3:]) + " - admined by " + str(self.message.author)
+            reason = ' '.join(str(x) for x in self.message.content.split(" ")[3:]) + " - updated by " + str(self.message.author)
 
             t = Transaction(reason,-1*amount)
-            coach.account.make_transaction(t)
-            if t.confirmed:
-                coach.store_coach()
+            try:
+                coach.make_transaction(t)
+            except TransactionError as e:
+                await self.transaction_error(e)
+                return
+            else:
                 msg = LongMessage(self.client,self.message.channel)
                 msg.add(f"Bank for {coach.name} updated to **{coach.account.cash}** coins:\n")
                 msg.add(f"Note: {reason}\n")
                 msg.add(f"Change: {amount} coins")
                 await msg.send()
-            else:
-                emsg = "Transaction could not complete"
-                msg = LongMessage(self.client,self.message.channel)
-                msg.add(emsg)
-                logger.error(emsg)
-                await msg.send()
-
+            
     async def __run_list(self):
         coach = Coach.load_coach(str(self.message.author))
         order = False if "bydate" in self.message.content else True
@@ -299,34 +303,21 @@ class DiscordCommand:
 
             # add error handling eventually
             coach = Coach.load_coach(str(self.message.author))
-            t = Transaction(pack.description(),pack.price)
+            t = Transaction(pack,pack.price)
             try:
-                coach.account.make_transaction(t)
+                coach.make_transaction(t)
             except TransactionError as e:
-                msg = LongMessage(self.client,self.message.channel)
-                msg.add(type(e).__name__ +": "+str(e))
-                logger.error(type(e).__name__ +": "+str(e))
-                await msg.send()
+                await self.transaction_error(e)
                 return
             else:
-                if t.confirmed:
-                    coach.add_to_collection(pack.cards)
-                    try:
-                        coach.store_coach()
-                    except Exception as e:
-                        msg = LongMessage(self.client,self.message.channel)
-                        msg.add(type(e).__name__ +": "+str(e))
-                        logger.error(type(e).__name__ +": "+str(e))
-                        await msg.send()
-                        return
-                    # transaction is ok and coach is saved
-                    msg = LongMessage(self.client,self.message.channel)
-                    msg.add(f"**{pack.description()}** for **{self.message.author}** - **{pack.price}** coins:\n")
-                    msg.add(f"{self.__class__.format_pack(pack.cards)}\n")
-                    msg.add(f"Remaining coins: **{coach.account.cash}**")
-                    await msg.send()
-                    # export
-                    imperiumsheet.store_all_cards()
+                # transaction is ok and coach is saved
+                msg = LongMessage(self.client,self.message.channel)
+                msg.add(f"**{pack.description()}** for **{self.message.author}** - **{pack.price}** coins:\n")
+                msg.add(f"{self.__class__.format_pack(pack.cards)}\n")
+                msg.add(f"**Bank:** {coach.account.cash} coins")
+                await msg.send()
+                # export
+                imperiumsheet.store_all_cards()
         else:
             await self.client.send_message(self.message.channel, self.__class__.gen_help())
 
