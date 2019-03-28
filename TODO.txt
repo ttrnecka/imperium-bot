@@ -4,6 +4,7 @@ info card command
 document command
 new generator logic
 add cards to transaction info
+make list off all transactions (bank)
 list cmd help
 adminbank command
 
