@@ -2,6 +2,8 @@ import os
 import yaml
 import time
 import logging
+#import imperiumbase
+from copy import deepcopy
 
 ROOT = os.path.dirname(__file__)
 
@@ -25,10 +27,16 @@ class Coach:
         stream = open(self.coach_file(self.name), 'w')
         yaml.dump(self, stream)
         stream.close()
+        #imperiumbase.ImperiumSheet.store_coach(self)
 
     @staticmethod
+    def exists(name):
+        if os.path.isfile(Coach.coach_file(name)):
+            return True
+        return False
+    @staticmethod
     def load_coach(name):
-        if os.path.isfile(Coach.coach_file(name)) :
+        if Coach.exists(name):
             stream = open(Coach.coach_file(name), 'r')
             coach = yaml.load(stream, Loader = yaml.Loader)
             stream.close()
@@ -48,7 +56,7 @@ class Coach:
             if card["Card Name"] in new_collection:
                 new_collection[card["Card Name"]]["Quantity"] += 1
             else:
-                new_collection[card["Card Name"]] = card
+                new_collection[card["Card Name"]] = deepcopy(card)
                 new_collection[card["Card Name"]]["Quantity"] = 1
         return list(new_collection.values())
 
@@ -84,7 +92,7 @@ class Coach:
         except FileExistsError:
             pass
         return folder
-    
+
     def make_transaction(self,transaction):
         # do nothing
         if self.account.cash < transaction.price:

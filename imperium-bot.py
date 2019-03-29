@@ -9,6 +9,7 @@ import time
 from coach import Coach, Transaction, TransactionError
 
 ROOT = os.path.dirname(__file__)
+RULES_LINK = "https://goo.gl/GqWRwD"
 
 #logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('discord')
@@ -194,6 +195,8 @@ class DiscordCommand:
                 await self.__run_list()
             if self.cmd.startswith('!genpack'):
                 await self.__run_genpack()
+            if self.cmd.startswith('!newcoach'):
+                await self.__run_newcoach()
         except Exception as e:
             await self.transaction_error(e)
             #raising will not kill the discrod bot but will cause it to log this to error.log as well
@@ -201,6 +204,21 @@ class DiscordCommand:
         except ValueError as ve:
             await self.transaction_error(e)
 
+    async def __run_newcoach(self):
+        name = str(self.message.author)
+        if Coach.exists(name):
+            msg = LongMessage(self.client,self.message.channel)
+            msg.add(f"**{self.message.author.mention}** account exists already\n")
+            await msg.send()
+        else:
+            coach = Coach.load_coach(str(self.message.author))
+            coach.store_coach()
+            # transaction is ok and coach is saved
+            msg = LongMessage(self.client,self.message.channel)
+            msg.add(f"**{self.message.author.mention}** account created\n")
+            msg.add(f"**Bank:** {coach.account.cash} coins")
+            msg.add(f"**Rules**: <{RULES_LINK}>")
+            await msg.send()
 
     async def __run_admin(self):
         # if not started from admin-channel
@@ -251,15 +269,15 @@ class DiscordCommand:
             # find coach
             coaches = Coach.find_by_name(self.args[2])
             if len(coaches)==0:
-                emsg=f"<coach> {self.args[2]} not found!!!\n"
+                emsg=f"Coach __{self.args[2]}__ not found!!!\n"
                 await self.client.send_message(self.message.channel, emsg)
                 return
 
             if len(coaches)>1:
-                emsg=f"<coach> {self.args[2]} not uniqe!!!\n"
-                emsg="Select one: "
+                emsg=f"Coach __{self.args[2]}__ not **unique**!!!\n"
+                emsg+="Select one: "
                 for coach in coaches:
-                    emsg+=coach
+                    emsg+=coach.name
                     emsg+=" "
                 await self.client.send_message(self.message.channel, emsg)
                 return

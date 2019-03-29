@@ -3,6 +3,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import random
 import os
 from coach import Coach
+from copy import deepcopy
 
 ROOT = os.path.dirname(__file__)
 
@@ -22,7 +23,6 @@ class ImperiumSheet:
     QTY = "Quantity"
 
     CARD_HEADER = [
-        "Coach",
         "Rarity",
         "Type",
         "Subtype",
@@ -66,7 +66,7 @@ class ImperiumSheet:
         return [card for card in cls.cards() if card["Rarity"]==rarity]
 
     @classmethod
-    def rarity(cls,pack_type, quality):
+    def rarity(cls,pack_type, quality="budget"):
         budgetCommon = 80+1;
         budgetRare = 95+1;
         budgetEpic = 99+1;
@@ -130,28 +130,43 @@ class ImperiumSheet:
 
         if pack_type == "training":
             for _ in range(3):
-                rarity = cls.rarity(pack_type,"premium")
+                rarity = cls.rarity(pack_type)
                 fcards = cls.filter_cards(rarity,"Training")
                 cards.append(random.choice(fcards))
 
         if pack_type == "player":
             races = cls.team_by_code(team)["races"]
             for _ in range(3):
-                rarity = cls.rarity(pack_type,"premium")
+                rarity = cls.rarity(pack_type)
                 fcards = cls.filter_cards(rarity,"Player",races)
                 cards.append(random.choice(fcards))
 
         if pack_type == "starter":
-            client = gspread.authorize(creds)
-            sheet = client.open_by_key(cls.SPREADSHEET_ID).worksheet(cls.STARTER_PACK_SHEET)
-            summed_cards = sheet.get_all_records()
-            for card in summed_cards:
-                count = card[cls.QTY]
-                del card[cls.QTY]
-                for _ in range(count):
-                    cards.append(card)
+            if hasattr(cls,"_starter_cards"):
+                cards = cls._starter_cards
+            else:
+                client = gspread.authorize(creds)
+                sheet = client.open_by_key(cls.SPREADSHEET_ID).worksheet(cls.STARTER_PACK_SHEET)
+                summed_cards = sheet.get_all_records()
+                for card in summed_cards:
+                    count = card[cls.QTY]
+                    del card[cls.QTY]
+                    for _ in range(count):
+                        cards.append(card)
+                cls._starter_cards = cards
 
         return cards
+
+    @classmethod
+    def start_pack_with_count(cls):
+        new_collection = {}
+        for card in cls.genpack("starter"):
+            if card["Card Name"] in new_collection:
+                new_collection[card["Card Name"]]["Quantity"] += 1
+            else:
+                new_collection[card["Card Name"]] = deepcopy(card)
+                new_collection[card["Card Name"]]["Quantity"] = 1
+        return list(new_collection.values())
 
     @classmethod
     def team_by_code(cls,code):
@@ -160,6 +175,45 @@ class ImperiumSheet:
     @classmethod
     def team_codes(cls):
         return [team["code"] for team in cls.MIXED_TEAMS]
+
+    @classmethod
+    def store_coach(cls,coach):
+        client = gspread.authorize(creds)
+        ws = client.open_by_key(cls.MASTERSHEET_ID)
+
+        try:
+            sheet = ws.worksheet(coach.name)
+        except gspread.exceptions.WorksheetNotFound:
+            sheet = ws.add_worksheet(title=coach.name,rows=300, cols=7)
+
+        sheet.clear()
+
+        COACH_CARD_HEADER = [
+            "Rarity",
+            "Type",
+            "Subtype",
+            "Card Name",
+            "Race",
+            "Description",
+            "Quantity"
+        ]
+
+        cards = []
+        cards.append(COACH_CARD_HEADER)
+
+        for card in cls.start_pack_with_count() + coach.collection_with_count():
+            cards.append(card)
+
+        cards_amount, keys_amount = len(cards), len(COACH_CARD_HEADER)
+
+        cell_list = sheet.range(f"A1:{gspread.utils.rowcol_to_a1(cards_amount, keys_amount)}")
+
+        for cell in cell_list:
+            if cell.row==1:
+                cell.value = cards[cell.row-1][cell.col-1]
+            else:
+                cell.value = cards[cell.row-1][COACH_CARD_HEADER[cell.col-1]]
+        sheet.update_cells(cell_list)
 
     @classmethod
     def store_all_cards(cls):
