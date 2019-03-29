@@ -2,7 +2,7 @@
 
 import logging
 import discord
-import imperiumsheet
+from imperiumbase import ImperiumSheet, Pack
 import random
 import os
 import time
@@ -89,8 +89,8 @@ class DiscordCommand:
             pack = sorted(pack, key=lambda x: (rarityorder[x["Rarity"]],x["Card Name"]))
         msg = ""
         for card in pack:
-            if imperiumsheet.QTY in card:
-                for c in str(card[imperiumsheet.QTY]):
+            if ImperiumSheet.QTY in card:
+                for c in str(card[ImperiumSheet.QTY]):
                     msg+=cls.number_emoji(c)
                 msg+=" x "
             msg+=cls.rarity_emoji(card["Rarity"])
@@ -107,8 +107,8 @@ class DiscordCommand:
         msg+="\t\ttraining\n"
         msg+="\t\tbooster\n"
         msg+="\t[mixed_team]: (player type only)\n"
-        for key, name in imperiumsheet.MIXED_TEAMS.items():
-            msg+=f"\t\t{key} - {name}\n"
+        for team in ImperiumSheet.MIXED_TEAMS:
+            msg+="\t\t"+team["code"] +" - "+ team["name"] +"\n"
         msg+="\t[quality]: (booster type only)\n"
         msg+="\t\tbudget (default)\n"
         msg+="\t\tpremium\n"
@@ -142,7 +142,7 @@ class DiscordCommand:
         if length == 3 and args[1]=="booster" and args[2] not in GEN_QUALITY:
             return False
         # player with teams
-        if length == 3 and args[1]=="player" and args[2] not in imperiumsheet.MIXED_TEAMS.keys():
+        if length == 3 and args[1]=="player" and args[2] not in ImperiumSheet.team_codes():
             return False
         return True
 
@@ -187,12 +187,20 @@ class DiscordCommand:
         self.args = self.cmd.split(" ")
 
     async def process(self):
-        if self.cmd.startswith('!admin'):
-            await self.__run_admin()
-        if self.cmd.startswith('!list'):
-            await self.__run_list()
-        if self.cmd.startswith('!genpack'):
-            await self.__run_genpack()
+        try:
+            if self.cmd.startswith('!admin'):
+                await self.__run_admin()
+            if self.cmd.startswith('!list'):
+                await self.__run_list()
+            if self.cmd.startswith('!genpack'):
+                await self.__run_genpack()
+        except Exception as e:
+            await self.transaction_error(e)
+            #raising will not kill the discrod bot but will cause it to log this to error.log as well
+            raise
+        except ValueError as ve:
+            await self.transaction_error(e)
+
 
     async def __run_admin(self):
         # if not started from admin-channel
@@ -272,7 +280,7 @@ class DiscordCommand:
                 msg.add(f"Note: {reason}\n")
                 msg.add(f"Change: {amount} coins")
                 await msg.send()
-            
+
     async def __run_list(self):
         coach = Coach.load_coach(str(self.message.author))
         order = False if "bydate" in self.message.content else True
@@ -291,14 +299,14 @@ class DiscordCommand:
             ptype = self.args[1]
             if ptype=="player":
                 team = self.args[2]
-                pack = imperiumsheet.Pack(ptype,team = team)
+                pack = Pack(ptype,team = team)
                 pack.generate()
             elif ptype=="training":
-                pack = imperiumsheet.Pack(ptype)
+                pack = Pack(ptype)
                 pack.generate()
             elif ptype=="booster":
                 ptype = "booster_budget" if len(self.args)<3 else f"booster_{self.args[2]}"
-                pack = imperiumsheet.Pack(ptype)
+                pack = Pack(ptype)
                 pack.generate()
 
             # add error handling eventually
@@ -317,7 +325,7 @@ class DiscordCommand:
                 msg.add(f"**Bank:** {coach.account.cash} coins")
                 await msg.send()
                 # export
-                imperiumsheet.store_all_cards()
+                ImperiumSheet.store_all_cards()
         else:
             await self.client.send_message(self.message.channel, self.__class__.gen_help())
 

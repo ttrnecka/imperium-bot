@@ -1,7 +1,11 @@
-new generator logic
-make list off all transactions (bank)
 export coaches to sheet
+newcoach command - generate coach, sends to PM and admin-channel and link to rules
 document command channel - clears it up at start
+
+make list off all transactions (bank)
+test code
+disable private commands at the end
+
 
 
 DONE
@@ -16,3 +20,5 @@ transaction
 adminbank command
 add cards to transaction info
 pack generator/transaction error handling - dry it up and finish for adm bank
+new generator logic
+keep sheet in memory
