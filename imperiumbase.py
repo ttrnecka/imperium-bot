@@ -17,7 +17,9 @@ class ImperiumSheet:
     TRAINING_CARDS_SHEET = "Training Cards"
     STARTER_PACK_SHEET="Starter Pack"
 
-    MASTERSHEET_ID = "1wL-qA6yYxaYkpvzL7KfwxNzJOsj0E17AEwSndSp7vNY"
+    with open(os.path.join(ROOT, 'MASTERSHEET_ID'), 'r') as file:
+        MASTERSHEET_ID=file.read()
+    #MASTERSHEET_ID = "1wL-qA6yYxaYkpvzL7KfwxNzJOsj0E17AEwSndSp7vNY"
     MASTER_NAME = "Master List"
 
     QTY = "Quantity"
