@@ -25,7 +25,6 @@ client = discord.Client()
 
 GEN_QUALITY = ["premium","budget"]
 GEN_PACKS = ["player","training","booster"]
-rarityorder={"Common":100, "Rare":10, "Epic":5, "Legendary":1}
 
 
 @client.event
@@ -87,7 +86,7 @@ class DiscordCommand:
     @classmethod
     def format_pack(cls,pack,is_sorted=True):
         if is_sorted:
-            pack = sorted(pack, key=lambda x: (rarityorder[x["Rarity"]],x["Card Name"]))
+            pack = Pack.sort_by_rarity(pack)
         msg = ""
         for card in pack:
             if ImperiumSheet.QTY in card:

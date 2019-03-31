@@ -69,16 +69,16 @@ class ImperiumSheet:
 
     @classmethod
     def rarity(cls,pack_type, quality="budget"):
-        budgetCommon = 80+1;
-        budgetRare = 95+1;
-        budgetEpic = 99+1;
-        budgetLegendary = 100+1;
-        trainingCommon = 65+1;
-        trainingRare = 97+1;
-        trainingEpic = 100+1;
-        premiumRare = 65+1;
-        premiumEpic = 97+1;
-        premiumLegendary = 100+1;
+        budgetCommon = 80+1
+        budgetRare = 95+1
+        budgetEpic = 99+1
+        budgetLegendary = 100+1
+        trainingCommon = 65+1
+        trainingRare = 97+1
+        trainingEpic = 100+1
+        premiumRare = 65+1
+        premiumEpic = 97+1
+        premiumLegendary = 100+1
 
         roll = random.randint(1,100)
 
@@ -264,6 +264,8 @@ PACK_PRICES = {
     "starter": 0
 }
 class Pack:
+    rarityorder={"Common":100, "Rare":10, "Epic":5, "Legendary":1}
+
     def __init__(self,ptype="booster_budget",team = None):
         if ptype not in PACK_PRICES:
             raise ValueError(f"Pack type {ptype} unknow")
@@ -295,6 +297,10 @@ class Pack:
         desc+=" pack"
 
         return desc
+
+    @classmethod
+    def sort_by_rarity(cls,cards):
+        return sorted(cards, key=lambda x: (cls.rarityorder[x["Rarity"]],x["Card Name"]))
 
 if __name__ == "__main__":
     #p = Pack("starter")

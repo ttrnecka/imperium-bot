@@ -8,8 +8,6 @@ And/remove from collection
 Assing identifier to the generated cards so they can be easily removed (and added to deck eventually)
 
 adminlist - to show transactions
-
-Exapand genpack help with cost and rarities info
 make list off all transactions (bank)
 test code
 
@@ -36,3 +34,4 @@ rarity() put quality as optional
 document command channel - clears it up at start
 genpack better help
 genpack training - if quality provided do not do anything
+Exapand genpack help with cost and rarities info

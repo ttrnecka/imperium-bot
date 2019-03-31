@@ -2,7 +2,7 @@ import os
 import yaml
 import time
 import logging
-#import imperiumbase
+import imperiumbase
 from copy import deepcopy
 
 ROOT = os.path.dirname(__file__)
@@ -29,6 +29,8 @@ class Coach:
         stream.close()
         #imperiumbase.ImperiumSheet.store_coach(self)
 
+    def short_name(self):
+        return self.name[:-5]
     @staticmethod
     def exists(name):
         if os.path.isfile(Coach.coach_file(name)):
