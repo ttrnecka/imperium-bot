@@ -2,7 +2,7 @@
 
 import logging
 import discord
-from imperiumbase import ImperiumSheet, Pack
+from imperiumbase import ImperiumSheet, Pack, PACK_PRICES
 import random
 import os
 import time
@@ -100,19 +100,35 @@ class DiscordCommand:
 
     @classmethod
     def gen_help(cls):
-        msg="```"
-        msg+="USAGE:\n"
-        msg+="!genpack <type> [mixed_team] [quality]\n"
-        msg+="\t<type>:\n"
-        msg+="\t\tplayer\n"
-        msg+="\t\ttraining\n"
-        msg+="\t\tbooster\n"
-        msg+="\t[mixed_team]: (player type only)\n"
+        msg="```asciidoc\n"
+        msg+="!genpack command generates new pack and assigns it to coach. The coach needs to have enough coins to buy the pack.\n \n"
+        msg+="= Booster budget pack =\n"
+        msg+="Content: 5 cards of any type\n"
+        msg+=f"Price: {PACK_PRICES['booster_budget']} coins\n"
+        msg+="Rarity: 1 Rare and higher rarity, 4 Common and higher rarity\n"
+        msg+="Command: !genpack booster\n \n"
+
+        msg+="= Booster budget pack PREMIUM =\n"
+        msg+="Content: 5 cards any type\n"
+        msg+=f"Price: {PACK_PRICES['booster_premium']} coins\n"
+        msg+="Rarity: Rare and higher\n"
+        msg+="Command: !genpack booster premium\n \n"
+
+        msg+="= Training pack =\n"
+        msg+="Content: 3 training type cards\n"
+        msg+=f"Price: {PACK_PRICES['training']} coins\n"
+        msg+="Rarity: Commom or higher\n"
+        msg+="Command: !genpack training\n \n"
+
+        msg+="= Player pack =\n"
+        msg+="Content: 3 player type cards\n"
+        msg+=f"Price: {PACK_PRICES['player']} coins\n"
+        msg+="Rarity: Rare or higher\n"
+        msg+="Command: !genpack player <team>\n"
+        msg+="where <team> is one of following:\n"
         for team in ImperiumSheet.MIXED_TEAMS:
-            msg+="\t\t"+team["code"] +" - "+ team["name"] +"\n"
-        msg+="\t[quality]: (booster type only)\n"
-        msg+="\t\tbudget (default)\n"
-        msg+="\t\tpremium\n"
+            msg+="\t"+team["code"] +" - "+ team["name"] +"\n"
+
         msg+="```"
         return msg
 

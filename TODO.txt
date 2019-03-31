@@ -1,9 +1,20 @@
+Autoprocess cards
+Loose Change!
+Banking Error!
+Lottery Win!
+And/remove from collection
 
+genpack better help
+genpack training - if quality provided do not do anything
+Assing identifier to the generated cards so they can be easily removed (and added to deck eventually)
+
+adminlist - to show transactions
+
+Exapand genpack help with cost and rarities info
 make list off all transactions (bank)
 test code
 
 disable private commands at the end
-
 
 
 DONE
