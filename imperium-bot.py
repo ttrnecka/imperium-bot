@@ -155,6 +155,9 @@ class DiscordCommand:
         # training/booster without quality
         if length == 2 and args[1] not in ["training","booster"]:
             return False
+        # training takes not other parameter
+        if length > 2 and args[1]=="training":
+            return False
         # booster with allowed quality
         if length == 3 and args[1]=="booster" and args[2] not in GEN_QUALITY:
             return False
@@ -213,12 +216,12 @@ class DiscordCommand:
                 await self.__run_genpack()
             if self.cmd.startswith('!newcoach'):
                 await self.__run_newcoach()
+        except ValueError as e:
+            await self.transaction_error(e)
         except Exception as e:
             await self.transaction_error(e)
             #raising will not kill the discrod bot but will cause it to log this to error.log as well
             raise
-        except ValueError as ve:
-            await self.transaction_error(e)
 
     async def __run_newcoach(self):
         name = str(self.message.author)
