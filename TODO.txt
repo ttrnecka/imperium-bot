@@ -2,8 +2,7 @@ Autoprocess cards
 Loose Change!
 Banking Error!
 Lottery Win!
-And/remove from collection
-
+And remove from collection
 
 Assing identifier to the generated cards so they can be easily removed (and added to deck eventually)
 
