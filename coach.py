@@ -2,7 +2,6 @@ import os
 import yaml
 import time
 import logging
-import imperiumbase
 from copy import deepcopy
 
 ROOT = os.path.dirname(__file__)
@@ -27,7 +26,6 @@ class Coach:
         stream = open(self.coach_file(self.name), 'w')
         yaml.dump(self, stream)
         stream.close()
-        #imperiumbase.ImperiumSheet.store_coach(self)
 
     def short_name(self):
         return self.name[:-5]
@@ -141,4 +139,3 @@ class TransactionError(Exception):
     pass
 
 #if __name__ == "__main__":
-
